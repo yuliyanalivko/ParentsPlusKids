@@ -1,0 +1,11 @@
+export const BACK = require('./back.png');
+export const ADD = require('./plus.png');
+export const PENCIL = require('./pencil.png');
+export const CLOSE = require('./signs.png');
+export const HOME = require('./home.png');
+export const CONVERSATIONS = require('./ellipsis.png');
+export const STAR = require('./star.png');
+export const QUESTION = require('./question.png');
+export const PENDING = require('./pending.png');
+export const DONE = require('./done.png');
+export const CROSS = require('./cross.png');
