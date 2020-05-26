@@ -9,6 +9,8 @@ import commonStyles from "../../constants/Styles";
 import styleVars from "../../constants/Variables";
 import {TextButton} from "../../components/TextButton";
 
+import {AsyncStorage} from 'react-native';
+
 export class LoginScreen extends React.Component {
     constructor(props) {
         super(props);
@@ -28,9 +30,7 @@ export class LoginScreen extends React.Component {
     }
 
     setBtnOpacity() {
-
         const btnOpacity = (this.state.password && this.state.email) ? 1 : .5;
-
         this.setState({
             btnOpacity: btnOpacity
         })
@@ -48,14 +48,41 @@ export class LoginScreen extends React.Component {
 
     handleConfirm() {
         if (this.state.btnOpacity === 1) {
-            if (this.state.email === '1' || this.state.password === '1') {
-                this.setState({errorOpacity: 1});
-                return;
-            }
-            alert(
-                'email: ' + this.state.email + '\n' + 'password: ' + this.state.password);
-            this.props.navigation.navigate('ChildNavigator');
+            const body = {email: this.state.email, password: this.state.password};
+            fetch('http://10.0.2.2:9000/login', {
+                method: 'post',
+                body: JSON.stringify(body),
+                headers: {'Content-Type': 'application/json'},
+            })
+                .then(res => res.json())
+                .then(json => {
+                        for (const key in json) {
+                            if (json.hasOwnProperty(key)) {
+                                const _storeData = async () => {
+                                    try {
+                                       await AsyncStorage.setItem('userId', json.userId.toString());
+                                        await AsyncStorage.setItem('email', json.email);
+                                        await AsyncStorage.setItem('userType', json.userType);
+                                        await AsyncStorage.setItem('familyId', json.familyId.toString());
+                                    } catch (e) {
+                                        console.log('LoginScreen handleConfirm error')
+                                    }
+                                };
+                                _storeData();
 
+                                if (json.userType === 'parent') {
+                                    this.props.navigation.navigate('ParentNavigator')
+                                } else if (json.userType === 'child') {
+                                    this.props.navigation.navigate('ChildNavigator')
+                                }
+                                return;
+                            }
+                        }
+                        this.setState({
+                            errorOpacity: 1
+                        })
+                    }
+                )
         }
     }
 
@@ -79,22 +106,21 @@ export class LoginScreen extends React.Component {
                         marginBottom: 18,
                     }}>
                         <GradientButton title={'Войти'}
+                                        width={styleVars.COMPONENT_WIDTH}
                                         onPress={this.handleConfirm}
                         />
                     </View>
 
-                    <TextButton title={'Забыли пароль?'} color={colors.thirdColor}
+                    <TextButton title={'Забыли пароль?'} color={colors.secondColor}
                                 onPress={() => this.props.navigation.navigate('PasswordRecovery')}/>
 
-                    <Text style={[commonStyles.error,{opacity: this.state.errorOpacity, marginTop:16}]}>
+                    <Text style={[commonStyles.error, {opacity: this.state.errorOpacity, marginTop: 16}]}>
                         Вы ввели неправильный логин или пароль. Попробуйте еще раз</Text>
 
                     <View style={{
                         position: "absolute",
                         bottom: styleVars.HEADER_HEIGHT
                     }}>
-                        <TextButton title={'Нет аккаунта? Зарегистрируйтесь!'}
-                                    onPress={() => this.props.navigation.navigate('EnterCode')}/>
                     </View>
                 </ScrollView>
             </KeyboardAvoidingView>
@@ -104,6 +130,6 @@ export class LoginScreen extends React.Component {
 
 const styles = StyleSheet.create({
     container: {...commonStyles.loginScreenContainer},
-    scrollSection: {...commonStyles.loginScreenScrollSection },
+    scrollSection: {...commonStyles.loginScreenScrollSection},
     title: {...commonStyles.loginScreenTitle},
 });

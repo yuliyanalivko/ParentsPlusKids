@@ -1,5 +1,14 @@
 import React from 'react';
-import {StyleSheet, View, ScrollView, StatusBar, SectionList, Text} from "react-native";
+import {
+    StyleSheet,
+    View,
+    ScrollView,
+    StatusBar,
+    SectionList,
+    Text,
+    AsyncStorage,
+    ActivityIndicator
+} from "react-native";
 import {SectionHeader} from "./../components/SectionHeader";
 import {DayQuestion} from "../components/DayQuestion";
 import ChildTaskList from "../components/ChildTaskList";
@@ -83,6 +92,7 @@ class ChildTasksScreen extends React.Component {
         this.hideDialog = this.hideDialog.bind(this);
         this.handleConfirm = this.handleConfirm.bind(this);
         this.state = {
+            isLoading: true,
             dialogVisible: false
         }
     }
@@ -102,7 +112,51 @@ class ChildTasksScreen extends React.Component {
     handleConfirm() {
     }
 
+    componentDidMount = async () => {
+        let questionsBuf = [], currentTasksBuf = [], prevTasksBuf = [], userIdBuf;
+        try {
+            const userId = AsyncStorage.getItem('userId')
+                .then(async (value) => {
+                    userIdBuf = parseInt(value);
+                    const day = new Date().getDate();
+                    const month = new Date().getMonth() + 1;
+                    const year = new Date().getFullYear();
+                    const date = year + '-0' + month + '-' + day;
+                    await fetch(`http://10.0.2.2:9000/dayquestions/${value}/${date}`)
+                        .then(response => response.json())
+                        .then(questions => {
+                            questions = questions.filter(user => user.id !== parseInt(userId));
+                            questionsBuf = questions;
+                        });
+                    await fetch(`http://10.0.2.2:9000/childtasks/${value}/`)
+                        .then(response => response.json())
+                        .then(childTasks => {
+                            prevTasksBuf = childTasks.filter(task => task.status === 'completed' || task.status === 'failed');
+                            currentTasksBuf = childTasks.filter(task => task.status === 'pending' || task.status === 'unconfirmed');
+                        });
+
+                    this.setState({
+                        QUESTIONS: questionsBuf,
+                        CURRENT_TASKS: currentTasksBuf,
+                        PREVIOUS_TASKS: prevTasksBuf,
+                        isLoading: false,
+                        userId: userIdBuf
+                    })
+                });
+        } catch (error) {
+            // Error retrieving data
+        }
+    };
+
     render() {
+        if (this.state.isLoading) {
+            return (
+                <View style={{flex: 1, marginTop: '30%'}}>
+                    {console.log('loading')}
+                    <ActivityIndicator color={colors.activeColor} size={'large'}/>
+                </View>
+            )
+        }
         return (
             <View style={[styles.container, this.props.style]}>
                 <StatusBar barStyle={'dark-content'} backgroundColor={'white'}/>
@@ -112,24 +166,25 @@ class ChildTasksScreen extends React.Component {
                 <ScrollView contentContainerStyle={styles.scrollSection}>
                     <View style={styles.section}>
                         <SectionHeader title={'Вопрос дня'}/>
-                        {QUESTIONS.length > 0 &&
-                        QUESTIONS.map(item => (
+                        {this.state.QUESTIONS.length > 0 &&
+                        this.state.QUESTIONS.map(item => (
                             <DayQuestion question={item.question}
                                          answer={item.answer}
                                          isAnswered={item.isAnswered}
                                          toAnswer={!item.isAnswered}
                             />
-                        ))
-                        }
-                        {QUESTIONS.length <= 0 &&
-                        <Text style={commonStyles.emptyContentText}>Список вопросов пуст</Text>
-                        }
+                        ))}
+                        {this.state.QUESTIONS.length <= 0 &&
+                        <Text style={commonStyles.emptyContentText}>Список вопросов пуст</Text>}
 
-                        <ChildTaskList data={CURRENT_TASKS} sectionTitle={'Текущие'}
+                        <ChildTaskList data={this.state.CURRENT_TASKS} sectionTitle={'Текущие'}
                                        onDelete={this.onDelete}
-                                       user={'child'}
+                                       userType={'child'}
+                                       userId={this.state.userId}
                         />
-                        <ChildTaskList data={PREVIOUS_TASKS} sectionTitle={'Ранее'}/>
+                        <ChildTaskList data={this.state.PREVIOUS_TASKS} sectionTitle={'Ранее'}
+                                       userType={'child'}
+                                       userId={this.state.userId}/>
                     </View>
                 </ScrollView>
             </View>

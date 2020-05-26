@@ -1,28 +1,20 @@
 import React from 'react';
-import {StyleSheet, View, ScrollView, StatusBar, SectionList, Text} from "react-native";
+import {StyleSheet,
+    View,
+    ScrollView,
+    StatusBar,
+    Text,
+    AsyncStorage,
+    ActivityIndicator} from "react-native";
 import {SectionHeader} from "./../components/SectionHeader";
 import {DayQuestion} from "../components/DayQuestion";
-import ChildTask from "./../components/ChildTask";
 import ChildTaskList from "../components/ChildTaskList";
 
 import commonStyles from "./../constants/Styles";
 import styleVars from './../constants/Variables';
-import colors from "../constants/Colors";
-import {GradientButton} from "../components/GradientButton";
+import colors from './../constants/Colors';
 import {InputDialog} from "../components/InputDialog";
 
-const QUESTIONS = [
-    {
-        question: 'Это какой-то вопрос?',
-        answer: null,
-        isAnswered: false
-    },
-    {
-        question: 'А это какой-то ну очень длинный вопрос?',
-        answer: 'А это какой-то нууу очень-очень длинный ответ',
-        isAnswered: true
-    }
-];
 
 const CURRENT_TASKS = [
     {
@@ -66,17 +58,6 @@ const PREVIOUS_TASKS = [
     }
 ];
 
-const TASK_SECTIONS = [
-    {
-        title: "Текущие",
-        data: CURRENT_TASKS
-    },
-    {
-        title: "Ранее",
-        data: PREVIOUS_TASKS
-    }
-];
-
 class ParentChildTasksScreen extends React.Component {
     constructor(props) {
         super(props);
@@ -84,7 +65,12 @@ class ParentChildTasksScreen extends React.Component {
         this.hideDialog = this.hideDialog.bind(this);
         this.handleConfirm = this.handleConfirm.bind(this);
         this.state = {
-            dialogVisible: false
+            isLoading: true,
+            dialogVisible: false,
+            QUESTIONS: [],
+            CURRENT_TASKS: [],
+            PREVIOUS_TASKS: []
+
         }
     }
 
@@ -100,54 +86,107 @@ class ParentChildTasksScreen extends React.Component {
         }))
     }
 
-    handleConfirm() {}
+    handleConfirm() {
+    }
+
+    componentDidMount = async () => {
+        let questionsBuf = [], currentTasksBuf =[], prevTasksBuf =[], userIdBuf;
+        try {
+            const userId = AsyncStorage.getItem('userId')
+                .then((value) => {
+                    userIdBuf=parseInt(value);
+                    const childId = AsyncStorage.getItem('childId')
+                        .then(async(value) => {
+                            this.setState({childId: value});
+                            const day = new Date().getDate();
+                            const month = new Date().getMonth() + 1;
+                            const year = new Date().getFullYear();
+                            const date = year + '-0' + month + '-' + day;
+                             await fetch(`http://10.0.2.2:9000/dayquestions/${value}/${date}`)
+                                .then(response => response.json())
+                                .then(questions => {
+                                    questions = questions.filter(user => user.id !== parseInt(userId));
+                                    questionsBuf = questions;
+                                });
+                            await fetch(`http://10.0.2.2:9000/childtasks/${value}/`)
+                                .then(response => response.json())
+                                .then(childTasks => {
+                                    prevTasksBuf = childTasks.filter(task => task.status === 'completed' || task.status === 'failed');
+                                    currentTasksBuf = childTasks.filter(task => task.status === 'pending' || task.status === 'unconfirmed');;
+                                });
+
+                            this.setState({
+                                QUESTIONS: questionsBuf,
+                                CURRENT_TASKS: currentTasksBuf,
+                                PREVIOUS_TASKS: prevTasksBuf,
+                                isLoading: false,
+                                userId: userIdBuf})
+                        });
+                });
+        } catch (error) {
+            // Error retrieving data
+        }
+    };
 
     render() {
+        if (this.state.isLoading) {
+            return (
+                <View style={{flex: 1, marginTop: '30%'}}>
+                    {console.log('loading')}
+                    <ActivityIndicator color={colors.activeColor} size={'large'}/>
+                </View>
+            )
+        }
         return (
-            <View style={[styles.container, this.props.style]}>
-                <StatusBar barStyle={'dark-content'} backgroundColor='#fff'/>
+        <View style={[styles.container, this.props.style]}>
+            <StatusBar barStyle={'dark-content'} backgroundColor='#fff'/>
 
-                <ScrollView contentContainerStyle={styles.scrollSection}>
-                    <View style={styles.section}>
-                        <SectionHeader title={'Вопрос дня'}
-                                       icon={'add'}
-                                       onPressIcon={this.showDialog}/>
-                        {QUESTIONS.length > 0 &&
-                        QUESTIONS.map(item => (
-                            <DayQuestion question={item.question}
-                                         answer={item.answer}
-                                         isAnswered={item.isAnswered}
-                            />
-                        ))
-                        }
-                        {QUESTIONS.length <= 0 &&
-                        <Text style={commonStyles.emptyContentText}>Список вопросов пуст</Text>
-                        }
-
-                        <InputDialog visible={this.state.dialogVisible}
-                                     onCancel={this.hideDialog}
-                                     onConfirm={this.handleConfirm}
-                                     title={'Задать вопрос'}
-                                     label={'Введите вопрос:'}
-                                     buttonTitle={'Задать'}
+            {console.log('loaded')}
+            <ScrollView contentContainerStyle={styles.scrollSection}>
+                <View style={styles.section}>
+                    <SectionHeader title={'Вопрос дня'}
+                                   icon={'add'}
+                                   onPressIcon={this.showDialog}/>
+                    {this.state.QUESTIONS.length > 0 &&
+                    this.state.QUESTIONS.map(item => (
+                        <DayQuestion question={item.question}
+                                     answer={item.answer}
+                                     editable={false}
                         />
+                    ))
+                    }
+                    {this.state.QUESTIONS.length <= 0 &&
+                    <Text style={commonStyles.emptyContentText}>Сегодня вопросов нет</Text>
+                    }
 
-                        <ChildTaskList data={CURRENT_TASKS} sectionTitle={'Текущие'}
-                                       onDelete={this.onDelete}
-                                       navigation={this.props.navigation}
-                                       user={'parent'}
-                        />
-                        <ChildTaskList data={PREVIOUS_TASKS} sectionTitle={'Ранее'}/>
+                    <InputDialog visible={this.state.dialogVisible}
+                                 onCancel={this.hideDialog}
+                                 onConfirm={this.handleConfirm}
+                                 title={'Задать вопрос'}
+                                 label={'Введите вопрос:'}
+                                 buttonTitle={'Задать'}
+                    />
 
-                    </View>
-                </ScrollView>
-            </View>
-        );
-    }
+                    <ChildTaskList data={this.state.CURRENT_TASKS} sectionTitle={'Текущие'}
+                                   onDelete={this.onDelete}
+                                   navigation={this.props.navigation}
+                                   childId={this.props.childId}
+                                   userType={'parent'}
+                                   userId={this.state.userId}
+                    />
+                    <ChildTaskList data={this.state.PREVIOUS_TASKS} sectionTitle={'Ранее'}
+                                   childId={this.props.childId}
+                                   userType={'parent'}
+                                   userId={this.state.userId}/>
+
+                </View>
+            </ScrollView>
+        </View>
+    );}
 }
 
 const styles = StyleSheet.create({
-    container: {...commonStyles.screenContainer,...{} },
+    container: {...commonStyles.screenContainer, ...{}},
     scrollSection: {
         ...commonStyles.scrollSection, ...{
             width: styleVars.WINDOW_WIDTH

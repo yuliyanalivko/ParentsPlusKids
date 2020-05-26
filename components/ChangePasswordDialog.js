@@ -1,5 +1,5 @@
 import React from "react";
-import {Text, View, StyleSheet, Modal, Image, TouchableHighlight, ScrollView} from "react-native";
+import {Text, View, StyleSheet, Modal, Image, TouchableHighlight, ScrollView, AsyncStorage} from "react-native";
 
 import styleVars from './../constants/Variables';
 import colors from './../constants/Colors';
@@ -28,15 +28,43 @@ export class ChangePasswordDialog extends React.Component {
         if (this.state.btnOpacity === 1) {
             let errorText = '';
             let errorOpacity = 0;
-            if (this.state.oldPassword === '1') {
-                errorText = 'Старый пароль введен неверно';
-                errorOpacity = 1;
-            }
-            this.setState({
-                errorOpacity: errorOpacity,
-                errorText: errorText
-            });
-            this.props.onConfirm();
+            const getEmail = async () => {
+                try {
+                    const userEmail = await AsyncStorage.getItem('email')
+                        .then(email => {
+                            if (email !== null) {
+                                const body = {email: email, password: this.state.oldPassword};
+                                fetch('http://10.0.2.2:9000/login', {
+                                    method: 'post',
+                                    body: JSON.stringify(body),
+                                    headers: {'Content-Type': 'application/json'},
+                                })
+                                    .then(res => res.json())
+                                    .then(json => {
+                                        for (const key in json) {
+                                            if (json.hasOwnProperty(key)) {
+                                                // отправить запрос на изменение пароля
+                                                return;
+                                            }
+                                        }
+                                        errorText = 'Старый пароль введен неверно';
+                                        errorOpacity = 1;
+                                        this.setState({
+                                            errorOpacity: errorOpacity,
+                                            errorText: errorText
+                                        });
+                                        this.props.onConfirm();
+                                    })
+                            }
+                        });
+                } catch (error) {
+                    this.setState({
+                        errorOpacity: 1,
+                        errorText: 'Ошибка. Невозможно изменить пароль'
+                    });
+                }
+            };
+            getEmail();
         }
     }
 
@@ -49,7 +77,7 @@ export class ChangePasswordDialog extends React.Component {
         let btnOpacity = .5;
         if (this.state.newPassword && this.state.confirmPassword) {
             errorText = (this.state.newPassword !== this.state.confirmPassword) ?
-                'Пароли должны совпадать' : !validatePassword(this.state.password) ?
+                'Пароли должны совпадать' : !validatePassword(this.state.newPassword) ?
                     'Пароль должен содержать хотя бы 8 символов' : '';
             errorOpacity = errorText === '' ? 0 : 1;
             btnOpacity = (this.state.oldPassword && errorText === '') ? 1 : .5;
@@ -78,21 +106,18 @@ export class ChangePasswordDialog extends React.Component {
 
                         <View style={styles.content}>
                             <Input label={'Старый пароль'}
-                                   maxLength={50}
                                    onChangeText={(value) => this.updateState('oldPassword', value)}
                             />
 
                             <Input label={'Новый пароль'}
-                                   maxLength={50}
                                    onChangeText={(value) => this.updateState('newPassword', value)}
                             />
 
                             <Input label={'Подтвердите новый пароль'}
-                                   maxLength={50}
                                    onChangeText={(value) => this.updateState('ConfirmPassword', value)}
                             />
 
-                            <Text style={[commonStyles.error,{opacity: this.state.errorOpacity}]}>
+                            <Text style={[commonStyles.error, {opacity: this.state.errorOpacity}]}>
                                 {this.state.errorText}</Text>
 
                             <View style={[styles.buttons, {opacity: this.state.btnOpacity}]}>

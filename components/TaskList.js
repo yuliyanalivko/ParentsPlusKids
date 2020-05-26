@@ -4,37 +4,30 @@ import Task from "./Task";
 import commonStyles from '../constants/Styles';
 import styleVars from '../constants/Variables';
 import colors from "../constants/Colors";
+import {setLeadTime} from "../constants/Functions";
 
-class AddTaskScreen extends React.Component {
-    constructor(props) {
-        super(props);
-    }
-
-    render() {
+const TaskList = (props) => {
         return (
-            <View style={[styles.container, this.props.style]}>
-                {this.props.data.length > 1 &&
+            <View style={[styles.container, props.style]}>
+                {console.log('data: '+props.data)}
+                {props.data.length > 1 &&
                 <ScrollView contentContainerStyle={styles.scrollSection}>
                     <View style={styles.section}>
                         <FlatList
                             style={styles.flatList}
-                            data={this.props.data}
+                            data={props.data}
                             keyExtractor={item => item.id}
                             renderItem={({item}) =>
-                                <Task task={item.task}
-                                      starCount={item.starCount}
-                                      leadTime={item.leadTime}
-                                      monster={item.monster}/>}
+                                <Task task={item}/>}
                         />
                     </View>
                 </ScrollView>}
-                {this.props.data.length === 0 &&
+                {props.data.length === 0 &&
                 <Text style={[commonStyles.emptyContentText, {marginTop: 50}]}>Список заданий пуст</Text>
                 }
             </View>
         );
-    }
-}
+};
 
 const styles = StyleSheet.create({
     container: {
@@ -42,8 +35,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         alignSelf: 'stretch',
         backgroundColor: colors.bgColor,
-        minHeight: styleVars.WINDOW_HEIGHT,
-        /* paddingBottom: styleVars.HEADER_HEIGHT*/
+        minHeight: styleVars.WINDOW_HEIGHT
     },
     scrollSection: {
         ...commonStyles.scrollSection, ...{
@@ -62,4 +54,4 @@ const styles = StyleSheet.create({
         marginTop: 24
     },
 });
-export default AddTaskScreen;
+export default TaskList;

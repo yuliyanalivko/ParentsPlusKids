@@ -1,95 +1,89 @@
-import React from 'react';
-import {StyleSheet, View, ScrollView, StatusBar, Text} from "react-native";
+import React, {useEffect, useState} from 'react';
+import {StyleSheet, View, ScrollView, StatusBar, Text, AsyncStorage, ActivityIndicator} from "react-native";
 import {SectionHeader} from "./../components/SectionHeader";
 
 import commonStyles from "./../constants/Styles";
 import styleVars from './../constants/Variables';
-import colors from "../constants/Colors";
 import {TitleHeader} from "../components/TitleHeader";
 import {NotPassedTest} from "../components/NotPassedTest";
 import MonsterProgress from "../components/MonsterProgress";
+import colors from "../constants/Colors";
 
-const NOT_PASSED_TESTS = [
-    {
-        title: 'Леняш',
-        description: 'Отсутствие силы воли'
-    },
-    {
-        title: 'Невнимашка',
-        description: 'Невнимательность'
+export class ChildMonstersScreen extends React.Component {
+
+    constructor(props) {
+        super(props);
+        this.state = {
+            isLoading: true,
+        }
     }
-];
-const MONSTERS = [
-    {
-        name: 'Опоздун',
-        description: 'Непунктуальность',
-        progress: 2
-    },
-    {
-        name: 'Неряш',
-        description: 'Неряшливость',
-        progress: 4
-    },
-    {
-        name: 'Дапотомчик',
-        description: 'Откладывание дел "на потом"',
-        progress: 5
-    },
-    {
-        name: 'УменяНеПолучайка',
-        description: 'Сдаваться, когда не получается',
-        progress: 7
-    },
-    /*    {
-            name: 'Леняш',
-            description: 'Отсутствие силы воли',
-            progress: 7
-        },
-        {
-            name: 'Невнимашка',
-            description: 'Невнимательность',
-            progress: 9
-        },*/
 
-];
+    componentDidMount = async () => {
+        const getMonsters = () => {
+            let monstersBuf = [], testsBuf = [];
+            const userId = AsyncStorage.getItem('userId')
+                .then(async (value) => {
+                    await fetch(`http://10.0.2.2:9000/childmonsters/${value}`)
+                        .then(response => response.json())
+                        .then(monsters => monstersBuf = monsters);
+                    await fetch(`http://10.0.2.2:9000/tests/${value}`)
+                        .then(response => response.json())
+                        .then(tests => testsBuf = tests);
+                    this.setState({
+                        MONSTERS: monstersBuf,
+                        TESTS: testsBuf,
+                        isLoading: false
+                    })
+                });
+        };
+        getMonsters();
+    };
 
-export const ChildMonstersScreen = props => {
-
-    return (
-        <View style={[styles.container, props.style]}>
-            <StatusBar barStyle={'dark-content'} backgroundColor={'white'}/>
-            <TitleHeader title={'МОИ МОНСТРЫ'}
-                         onPress={() => props.navigation.navigate('Settings')}/>
-
-            <ScrollView contentContainerStyle={styles.scrollSection}>
-                <View style={styles.section}>
-                    {NOT_PASSED_TESTS.length > 0 &&
-                    <SectionHeader title={'Непройденные тесты'}/>}
-                    {NOT_PASSED_TESTS.map(item => (
-                        <NotPassedTest title={item.title} description={item.description}
-                                       onPress={() => props.navigation.navigate('Test')}/>
-                    ))
-                    }
-                    {MONSTERS.length > 0 &&
-                    <SectionHeader title={'Мои монстры'}/>
-                    }
-                    {MONSTERS.map(item => (
-                        <MonsterProgress name={item.name}
-                                         description={item.description}
-                                         progress={item.progress}
-                        />
-                    ))}
+    render() {
+        if (this.state.isLoading) {
+            return (
+                <View style={{flex: 1, marginTop: '30%'}}>
+                    <ActivityIndicator color={colors.activeColor} size={'large'}/>
                 </View>
-            </ScrollView>
-        </View>
-    );
+            )
+        }
+        return (
+            <View style={[styles.container, this.props.style]}>
+                <StatusBar barStyle={'dark-content'} backgroundColor={'white'}/>
+                <TitleHeader title={'МОИ МОНСТРЫ'}
+                             onPress={() => this.props.navigation.navigate('Settings')}/>
+
+                <ScrollView contentContainerStyle={styles.scrollSection}>
+                    <View style={styles.section}>
+                        {this.state.TESTS.length > 0 &&
+                        <SectionHeader title={'Непройденные тесты'}/>}
+                        {this.state.TESTS.map(item => (
+                            <NotPassedTest id={item.id}
+                                           title={item.monster} description={item.description}
+                                           onPress={() => this.props.navigation.navigate('Test', {testId:item.id})}/>
+                        ))
+                        }
+                        {console.log(this.state.MONSTERS)}
+                        {this.state.MONSTERS.length > 0 &&
+                        <SectionHeader title={'Мои монстры'}/>
+                        }
+                        {this.state.MONSTERS.map(item => (
+                            <MonsterProgress name={item.monsterName}
+                                             description={item.description}
+                                             progress={item.progress}
+                            />
+                        ))}
+                    </View>
+                </ScrollView>
+            </View>
+        );
+    }
 };
 
 const styles = StyleSheet.create({
     container: {...commonStyles.screenContainer, ...{}},
     scrollSection: {
-        ...commonStyles.scrollSection, ...{
-        }
+        ...commonStyles.scrollSection, ...{}
     },
     section: {
         alignSelf: 'stretch',

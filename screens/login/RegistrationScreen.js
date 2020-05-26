@@ -3,13 +3,13 @@ import {View, Text, StyleSheet, ScrollView, StatusBar, KeyboardAvoidingView} fro
 import {GradientButton} from "../../components/GradientButton";
 import Input from "../../components/Input";
 import {CloseHeader} from "../../components/CloseHeader";
+import {Dropdown} from "react-native-material-dropdown";
 
 import colors from "../../constants/Colors";
 import commonStyles from "../../constants/Styles";
-import styleVars from "../../constants/Variables";
 import {validateEmail} from "../../constants/Functions";
 import {validatePassword} from "../../constants/Functions";
-import {Dropdown} from "react-native-material-dropdown";
+import styleVars from "../../constants/Variables";
 
 const FEMALE_ROLES = [
     {value: 'Мама'},
@@ -54,7 +54,7 @@ export class RegistrationScreen extends React.Component {
         let errorText;
         if (this.state.password && this.state.confirmPassword) {
             errorText = (this.state.password !== this.state.confirmPassword) ? 'Пароли должны совпадать' :
-                !validatePassword(this.state.password)? 'Пароль должен содержать хотя бы 8 символов' : '';
+                !validatePassword(this.state.password) ? 'Пароль должен содержать хотя бы 8 символов' : '';
             errorOpacity = (errorText === '') ? 0 : 1;
             btnOpacity = (this.state.userName && this.state.email)
             && (errorOpacity === 0) ? 1 : .5;
@@ -75,7 +75,7 @@ export class RegistrationScreen extends React.Component {
                         field === 'password' ? this.setState({password: value}) :
                             field === 'confirmPassword' ? this.setState({confirmPassword: value}) : 0;
 
-        if (field === 'gender') {
+        if (field === 'gender' && this.props.route.params.userType==='parent') {
             this.setState({
                 role: value === 'Женский' ? FEMALE_ROLES[0].value : MALE_ROLES[0].value
             });
@@ -85,28 +85,40 @@ export class RegistrationScreen extends React.Component {
 
     handleConfirm() {
         if (this.state.btnOpacity === 1) {
-
-            if (this.state.email === '1') {
-                this.setState({
-                    errorText: 'Этот email уже используется',
-                    errorOpacity: 1
+            const body = {email: this.state.email};
+            fetch('http://10.0.2.2:9000/login', {
+                method: 'post',
+                body: JSON.stringify(body),
+                headers: {'Content-Type': 'application/json'},
+            })
+                .then(res => res.json())
+                .then(json => {
+                    for (const key in json) {
+                        if (json.hasOwnProperty(key)) {
+                            this.setState({
+                                errorText: 'Этот email уже используется',
+                                errorOpacity: 1
+                            });
+                            return;
+                        }
+                    }
+                    if (!validateEmail(this.state.email)) {
+                        this.setState({
+                            errorText: 'Email введен неверно',
+                            errorOpacity: 1
+                        });
+                        return;
+                    }
+                    else {
+                        alert('userName: ' + this.state.userName + '\n' +
+                            'email: ' + this.state.email + '\n' +
+                            'gender: ' + this.state.gender + '\n' +
+                            'role: ' + this.state.role + '\n' +
+                            'password: ' + this.state.password + '\n' +
+                            'confirmPassword: ' + this.state.confirmPassword + '\n');
+                        this.props.navigation.navigate('ChildNavigator');
+                    }
                 });
-                return;
-            }
-            if (!validateEmail(this.state.email)){
-                this.setState({
-                    errorText: 'Email введен неверно',
-                    errorOpacity: 1
-                });
-                return;
-            }
-                alert('userName: ' + this.state.userName + '\n' +
-                    'email: ' + this.state.email + '\n' +
-                    'gender: ' + this.state.gender + '\n' +
-                    'role: ' + this.state.role + '\n' +
-                    'password: ' + this.state.password + '\n' +
-                    'confirmPassword: ' + this.state.confirmPassword + '\n');
-            this.props.navigation.navigate('ChildNavigator');
         }
     }
 
@@ -138,6 +150,7 @@ export class RegistrationScreen extends React.Component {
                               }}
                               onChangeText={(value) => this.updateState('gender', value)}
                     />
+                    {this.props.route.params.userType === 'parent' &&
                     <Dropdown label='Роль'
                               value={this.state.gender === 'Женский' ? FEMALE_ROLES[0].value : MALE_ROLES[0].value}
                               data={this.state.gender === 'Женский' ? FEMALE_ROLES : MALE_ROLES}
@@ -147,23 +160,25 @@ export class RegistrationScreen extends React.Component {
                               selectedItemColor={colors.mainText}
                               disabledItemColor={colors.secondColor}
                               containerStyle={{
-                                  width: '100%',
-                                  paddingBottom: 20
+                                  width: '100%'
                               }}
                               onChangeText={(value) => this.updateState('role', value)}
-                    />
+                    />}
                     <Input label={'Пароль'} secureTextEntry={true} password={true}
-                           onChangeText={(value) => this.updateState('password', value)}/>
+                           onChangeText={(value) => this.updateState('password', value)}
+                           style={{paddingTop: 20}}
+                    />
                     <Input label={'Подтвердите пароль'} secureTextEntry={true} password={true}
                            onChangeText={(value) => this.updateState('confirmPassword', value)}/>
 
-                    <Text style={[commonStyles.error,{opacity: this.state.errorOpacity}]}>
+                    <Text style={[commonStyles.error, {opacity: this.state.errorOpacity}]}>
                         {this.state.errorText}</Text>
 
                     <View style={{
                         opacity: this.state.btnOpacity
                     }}>
                         <GradientButton title={'Зарегистрироваться'}
+                                        width={styleVars.COMPONENT_WIDTH}
                                         onPress={this.handleConfirm}
                         />
                     </View>

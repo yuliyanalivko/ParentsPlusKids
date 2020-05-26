@@ -1,59 +1,63 @@
-import React from 'react';
-import {StyleSheet, View, ScrollView, StatusBar} from "react-native";
+import React, {useState, useEffect} from 'react';
+import {StyleSheet, View, ScrollView, StatusBar, ActivityIndicator, AsyncStorage, Text} from "react-native";
 import MonsterProgress from "./../components/MonsterProgress";
 
 import commonStyles from "../constants/Styles";
+import colors from "../constants/Colors";
 
-const MONSTERS = [
-    {
-        name: 'Опоздун',
-        description: 'Непунктуальность',
-        progress: 2
-    },
-    {
-        name: 'Неряш',
-        description: 'Неряшливость',
-        progress: 4
-    },
-    {
-        name: 'Дапотомчик',
-        description: 'Откладывание дел "на потом"',
-        progress: 5
-    },
-    {
-        name: 'УменяНеПолучайка',
-        description: 'Сдаваться, когда не получается',
-        progress: 7
-    },
-    {
-        name: 'Леняш',
-        description: 'Отсутствие силы воли',
-        progress: 7
-    },
-    {
-        name: 'Невнимашка',
-        description: 'Невнимательность',
-        progress: 9
-    },
+class ParentChildProgressScreen extends React.Component {
 
-];
+    constructor(props) {
+        super(props);
+        this.state = {
+            isLoading: true,
+            MONSTERS: []
+        }
+    }
 
-export const ParentChildProgressScreen = props => {
-    return (
-        <View style={styles.container}>
-            <StatusBar barStyle={'dark-content'} backgroundColor='#fff'
-                       navigation={props.navigation}
-            />
-            <ScrollView contentContainerStyle={styles.scrollSection}>
-                {MONSTERS.map(item => (
-                    <MonsterProgress name={item.name}
-                                     description={item.description}
-                                     progress={item.progress}
-                    />
-                ))}
-            </ScrollView>
-        </View>
-    );
+    componentDidMount = async () => {
+        const getMonsters =  () => {
+            const userId = AsyncStorage.getItem('childId')
+                .then(async(value) => {
+                    await fetch(`http://10.0.2.2:9000/childmonsters/${value}`)
+                        .then(response => response.json())
+                        .then(monsters =>
+                            this.setState({
+                            MONSTERS: monsters,
+                            isLoading: false
+                        }));
+                });
+        };
+        getMonsters();
+    };
+
+    render() {
+        if(this.state.isLoading){
+        return(
+            <View style={{flex: 1, marginTop: '30%'}}>
+                <ActivityIndicator color={colors.activeColor} size={'large'}/>
+            </View>
+        )
+    }
+        return (
+            <View style={styles.container}>
+                <StatusBar barStyle={'dark-content'} backgroundColor='#fff'
+                           navigation={this.props.navigation}
+                />
+                <ScrollView contentContainerStyle={styles.scrollSection}>
+                    {this.state.MONSTERS.length <= 0 &&
+                    <Text style={commonStyles.emptyContentText}>Монстры не обнаружены</Text>
+                    }
+                    {this.state.MONSTERS.length > 0 && this.state.MONSTERS.map(item => (
+                        <MonsterProgress name={item.monsterName}
+                                         description={item.description}
+                                         progress={item.progress}
+                        />
+                    ))}
+                </ScrollView>
+            </View>
+        );
+    }
 };
 
 const styles = StyleSheet.create({

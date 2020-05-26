@@ -1,10 +1,8 @@
-import React, {Component} from "react";
-import {Text, TouchableHighlight, View, StyleSheet, Modal, Image} from "react-native";
-import {LinearGradient} from "expo-linear-gradient";
+import React from "react";
+import {Text, View, StyleSheet, Modal, Image} from "react-native";
 import {STAR} from "../assets/images";
 
 import styleVars from './../constants/Variables';
-import colors from './../constants/Colors';
 import commonStyles from './../constants/Styles';
 import {GradientButton} from "./GradientButton";
 
@@ -16,7 +14,7 @@ export const TestResultDialog = props => {
 
                 <View style={styles.dialogContainer}>
                     <Image style={styles.img} source={STAR}/>
-                    <Text style={styles.title}>Леняш</Text>
+                    <Text style={styles.title}>{props.monster}</Text>
                     <Text style={styles.message}>{props.message}</Text>
                     <GradientButton title={'Ок'} onPress={props.onConfirm}/>
                 </View>

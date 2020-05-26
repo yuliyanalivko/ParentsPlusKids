@@ -16,23 +16,26 @@ class ChildTask extends React.Component {
 
     constructor(props) {
         super(props);
-
         this.state = {
-            status: this.props.status,
-            gradient: (this.props.status === 'pending') ? colors.mainGradient
-                : (this.props.status === 'unconfirmed') ? colors.BLUE_GRADIENT
-                    : (this.props.status === 'completed') ? colors.GREEN_GRADIENT
+            status: this.props.task.status,
+            gradient: (this.props.task.status === 'pending') ? colors.mainGradient
+                : (this.props.task.status === 'unconfirmed') ? colors.BLUE_GRADIENT
+                    : (this.props.task.status === 'completed') ? colors.GREEN_GRADIENT
                         : colors.RED_GRADIENT,
-            confirmButtonType: (this.props.user === 'parent' && this.props.status === 'pending') ? 'delete'
-                : (this.props.user === 'parent' && this.props.status === 'unconfirmed'
-                    || this.props.user === 'child' && this.props.status === 'pending') ? 'confirm'
+            confirmButtonType: (this.props.userType === 'parent' && this.props.task.status === 'pending') ? 'delete'
+                : (this.props.userType === 'parent' && this.props.task.status === 'unconfirmed'
+                    || this.props.userType === 'child' && this.props.task.status === 'pending') ? 'confirm'
                     : null,
-            icon: (this.props.status === 'pending') ? PENDING
-                : (this.props.status === 'unconfirmed') ? QUESTION
-                    : (this.props.status === 'completed') ? DONE
+            icon: (this.props.task.status === 'pending') ? PENDING
+                : (this.props.task.status === 'unconfirmed') ? QUESTION
+                    : (this.props.task.status === 'completed') ? DONE
                         : CROSS,
 
-            dialogVisible: false
+            dialogVisible: false,
+
+            leadTime: (this.props.task.leadTime === 1) ? this.props.task.leadTime + ' день' :
+                (this.props.task.leadTime >= 2 && this.props.task.leadTime <= 4) ? this.props.task.leadTime + ' дня' :
+                    this.props.task.leadTime + ' дней'
         }
     }
 
@@ -83,8 +86,7 @@ class ChildTask extends React.Component {
             <TouchableHighlight underlayColor={'transparent'}
                                 onPress={this.showDlg.bind(this)}>
 
-                <View style={[styles.container, commonStyles.shadow, this.props.style,
-                    /*{backgroundColor: this.state.gradient.start+'44'}*/]}>
+                <View style={[styles.container, commonStyles.shadow, this.props.style]}>
                     <LinearGradient start={{x: 0.0, y: 0.0}} end={{x: 1.0, y: 1.0}}
                                     locations={[0, 1]}
                                     colors={[this.state.gradient.start, this.state.gradient.end]}
@@ -97,34 +99,32 @@ class ChildTask extends React.Component {
                     <View style={styles.taskContent}>
                         <Text style={styles.task}
                               numberOfLines={2}>
-                            {this.props.task}</Text>
+                            {this.props.task.taskText}</Text>
                         <View style={styles.dateButton}>
-                            {(this.state.status === 'unconfirmed' && this.props.user === 'parent') &&
+                            {(this.state.status === 'unconfirmed' && this.props.userType === 'parent'
+                                && this.props.userId === this.props.task.parentId) &&
                             <GradientButton title={'Подтвердить'} style={styles.button}
                                             onPress={this.showDlg.bind(this)}/>}
 
-                            {(this.state.status === 'pending' && this.props.user === 'child') &&
+                            {(this.state.status === 'pending' && this.props.userType === 'child') &&
                             <GradientButton title={'Выполнено'} style={styles.button}
                                             onPress={this.showDlg.bind(this)}/>}
-                            <Text style={styles.date}>{this.props.date}</Text>
+                            <Text style={styles.date}>{this.props.task.date.substring(0,10)}</Text>
                         </View>
                     </View>
 
                     <ChildTaskDialog visible={this.state.dialogVisible}
-                                     parentName={'Александра'}
                                      task={this.props.task}
-                                     date={this.props.date}
-                                     points={this.props.points}
-                                     leadTime={this.props.leadTime}
-                                     monster={this.props.monster}
                                      confirmButtonType={this.state.confirmButtonType}
                                      onCancel={this.handleCancel.bind(this)}
                                      onConfirm={this.handleConfirm.bind(this)}
                                      gradient={this.state.gradient}
+                                     userId={this.props.userId}
+                                     userType = {this.props.userType}
+
                     />
                 </View>
             </TouchableHighlight>
-
         );
     }
 }

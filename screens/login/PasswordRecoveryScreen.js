@@ -1,5 +1,5 @@
 import React from 'react';
-import {View, Text, StyleSheet, ScrollView, StatusBar, KeyboardAvoidingView} from "react-native";
+import {View, Text, StyleSheet, ScrollView, StatusBar, KeyboardAvoidingView, AsyncStorage} from "react-native";
 import {GradientButton} from "../../components/GradientButton";
 import Input from "../../components/Input";
 import {CloseHeader} from "../../components/CloseHeader";
@@ -7,23 +7,6 @@ import {CloseHeader} from "../../components/CloseHeader";
 import colors from "../../constants/Colors";
 import commonStyles from "../../constants/Styles";
 import styleVars from "../../constants/Variables";
-import {Dropdown} from "react-native-material-dropdown";
-
-const FEMALE_ROLES = [
-    {value: 'Мама'},
-    {value: 'Бабушка'},
-    {value: 'Сестра'},
-    {value: 'Тетя'},
-    {value: 'Другое'}
-];
-
-const MALE_ROLES = [
-    {value: 'Папа'},
-    {value: 'Дедушка'},
-    {value: 'Брат'},
-    {value: 'Дядя'},
-    {value: 'Другое'}
-];
 
 export class PasswordRecoveryScreen extends React.Component {
     constructor(props) {
@@ -67,40 +50,50 @@ export class PasswordRecoveryScreen extends React.Component {
             let btnOpacity;
 
             if (this.state.step === 1) {
-                let step;
-                errorText = (this.state.email === '1') ?
-                    'Пользователь с таким адресом электронной почты не найден' : '';
-                errorOpacity = errorText === '' ? 0 : 1;
-                step = errorText === '' ? 2 : 1;
-                btnOpacity = (step === 1) ? 1 : .5;
-
-                const self = this;
-                setTimeout(() => {
-                    self.setState({
-                        step: step,
-                        errorText: errorText,
-                        errorOpacity: errorOpacity,
-                        btnOpacity: btnOpacity
+                const body = {email: this.state.email};
+                fetch('http://10.0.2.2:9000/login', {
+                    method: 'post',
+                    body: JSON.stringify(body),
+                    headers: {'Content-Type': 'application/json'},
+                })
+                    .then(res => res.json())
+                    .then(json => {
+                        for (const key in json) {
+                            if (json.hasOwnProperty(key)) {
+                                this.setState({
+                                    step: 2,
+                                    errorText: '',
+                                    errorOpacity: 0
+                                });
+                                return;
+                            }
+                        }
+                        this.setState({
+                            errorText: 'Пользователь с таким адресом электронной почты не найден',
+                            errorOpacity: 1
+                        });
                     });
-                }, 1);
-
-
             }
             if (this.state.step === 2) {
-                errorText = (this.state.password === '1') ? 'Неверный код' : '';
-                errorOpacity = (errorText === '') ? 0 : 1;
-                const self = this;
-                setTimeout(() => {
-                    self.setState({
-                        errorText: errorText,
-                        errorOpacity: errorOpacity,
+                const body = {email: this.state.email, password: this.state.password};
+                fetch('http://10.0.2.2:9000/login', {
+                    method: 'post',
+                    body: JSON.stringify(body),
+                    headers: {'Content-Type': 'application/json'},
+                })
+                    .then(res => res.json())
+                    .then(json => {
+                        for (const key in json) {
+                            if (json.hasOwnProperty(key)) {
+                                this.props.navigation.navigate('ChildNavigator');
+                                return;
+                            }
+                        }
+                        this.setState({
+                            errorText: 'Неверный пароль',
+                            errorOpacity: 1
+                        });
                     });
-                    if (errorText === '') {
-                        alert('email: ' + this.state.email + '\n' +
-                            'password: ' + this.state.password);
-                        this.props.navigation.navigate('ChildNavigator');
-                    }
-                }, 1);
             }
         }
     }
@@ -112,8 +105,11 @@ export class PasswordRecoveryScreen extends React.Component {
                 <CloseHeader onClose={() => this.props.navigation.goBack()}/>
                 <ScrollView contentContainerStyle={styles.scrollSection}>
 
-                    <Text style={styles.title}>{this.state.step === 1 ?
-                        'Введите адрес вашей электронной почты' : 'Введите код'}</Text>
+                    <Text style={styles.title}>{'Восстановление пароля'}</Text>
+
+                    <Text style={styles.text}>
+                        {this.state.step === 1 ? 'Введите ваш email' : 'Мы отправили пароль на Ваш email. Пожалуйста, введите его.'}
+                    </Text>
 
                     {this.state.step === 1 &&
                     <Input label={'Электронная почта'} autoCompleteType={'email'}
@@ -125,6 +121,7 @@ export class PasswordRecoveryScreen extends React.Component {
 
                     <View style={{opacity: this.state.btnOpacity}}>
                         <GradientButton title={'Далее'}
+                                        width={styleVars.COMPONENT_WIDTH}
                                         onPress={this.handleConfirm}/>
                     </View>
 
@@ -141,8 +138,17 @@ export class PasswordRecoveryScreen extends React.Component {
     }
 }
 
-const styles = StyleSheet.create({
-    container: {...commonStyles.loginScreenContainer},
-    scrollSection: {...commonStyles.loginScreenScrollSection },
-    title: {...commonStyles.loginScreenTitle},
-});
+const
+    styles = StyleSheet.create({
+        container: {...commonStyles.loginScreenContainer},
+        scrollSection: {...commonStyles.loginScreenScrollSection},
+        title: {...commonStyles.loginScreenTitle},
+        text: {
+            ...commonStyles.mainText, ...{
+                marginBottom: 16,
+                height: 48,
+                width: '100%',
+                justifyContent: 'flex-start'
+            }
+        }
+    });

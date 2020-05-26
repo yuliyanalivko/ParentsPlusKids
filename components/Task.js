@@ -1,6 +1,6 @@
 import React from 'react';
 import {View, Text, Image, StyleSheet, TouchableHighlight} from 'react-native';
-import TaskDialog from "./TaskDialog";
+import {TaskDialog} from "./TaskDialog";
 
 import styleVars from './../constants/Variables';
 import colors from "./../constants/Colors";
@@ -39,32 +39,35 @@ export default class Task extends React.Component {
     render() {
         return (
             <TouchableHighlight underlayColor={'transparent'}
-                                onPress={this.showDialog}
-            >
+                                onPress={this.showDialog}>
+
                 <View style={[styles.container, commonStyles.shadow]}>
-                    <Text style={styles.task} numberOfLines={2}>{this.props.task}</Text>
+                    <Text style={styles.task} numberOfLines={2}>{this.props.task.taskText}</Text>
                     <View style={styles.paramsLine}>
                         <View style={styles.param}>
                             <Image style={styles.icon}
                                    source={{uri: 'https://reactnative.dev/img/tiny_logo.png',}}/>
-                            <Text style={styles.paramText}>{this.props.starCount}</Text>
+                            <Text style={styles.paramText}>{this.props.task.points}</Text>
                         </View>
+                        {this.props.task.leadTime &&
                         <View style={styles.param}>
                             <Image style={styles.icon}
                                    source={{uri: 'https://reactnative.dev/img/tiny_logo.png',}}/>
-                            <Text style={styles.paramText}>{this.props.leadTime}</Text>
+                            <Text style={styles.paramText}>{this.props.task.leadTime}</Text>
                         </View>
+                        }
+                        {console.log(this.props.task)}
+                        {this.props.task.monster &&
                         <View style={styles.param}>
                             <Image style={styles.icon}
                                    source={{uri: 'https://reactnative.dev/img/tiny_logo.png',}}/>
-                            <Text style={styles.paramText}>{this.props.monster}</Text>
+                            <Text style={styles.paramText}>{this.props.task.monster}</Text>
                         </View>
+                        }
                     </View>
 
                     <TaskDialog visible={this.state.dialogVisible}
                                 task={this.props.task}
-                                leadTime={this.props.leadTime}
-                                starCount={this.props.starCount}
                                 onCancel={this.handleCancel}
                                 onAdd={this.handleAdd}
                     />

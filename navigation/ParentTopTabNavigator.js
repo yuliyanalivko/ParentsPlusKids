@@ -5,10 +5,12 @@ import ParentChildTasksScreen from "../screens/ParentChildTasksScreen";
 import ParentChildProgressScreen from "../screens/ParentChildProgressScreen";
 
 import colors from './../constants/Colors';
+import {BackHeader} from "../components/BackHeader";
+import {View} from "react-native";
 
 const Tab = createMaterialTopTabNavigator();
 
-export default function ParentTopTabNavigator() {
+export default function ParentTopTabNavigator(props) {
     return (
         <Tab.Navigator backBehavior={'initialRoute'}
                        tabBarOptions={{

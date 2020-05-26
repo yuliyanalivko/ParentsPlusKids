@@ -11,8 +11,8 @@ class Input extends React.Component {
         this.inputColor = (this.props.inputColor) ? (this.props.inputColor) : colors.mainText;
         this.maxLength = this.props.maxLength ? this.props.maxLength : 256;
         this.state = {
-            text: this.props.value ? this.props.value : "",
-            inputColor: (this.props.inputColor) ? (this.props.inputColor) : colors.mainText,
+           // text: this.props.value!==null ? this.props.value : "none",
+            inputColor: colors.mainText,
             isValid: this.props.value ? true : false
         }
     }
@@ -69,12 +69,12 @@ class Input extends React.Component {
 
     render() {
         return (
-            <View style={styles.container}>
+            <View style={[styles.container, this.props.style]}>
                 {this.props.label &&
                 <Text style={[styles.label, this.props.labelStyle]}>{this.props.label}</Text>}
                 <TextInput onChangeText={this.changeText}
                            style={[styles.input, this.props.inputStyle, {color: this.state.inputColor}]}
-                           defaultValue={this.state.text}
+                           defaultValue={this.props.value}
                            maxLength={this.maxLength}
                            keyboardType={this.props.keyboardType}
                            multiline={(this.props.multiline) ? true : false}

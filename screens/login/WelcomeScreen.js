@@ -19,9 +19,9 @@ class WelcomeScreen extends Component {
                     <Text style={styles.headerText}>Кто вы?</Text>
                 </View>
                     <UserButton title="Я ребенок"
-                                onPress={() => navigate('Login')}/>
+                                onPress={() => navigate('EnterCode', {userType: 'child'})}/>
                     <UserButton title="Я родитель"
-                                onPress={() => navigate('ParentNavigator')}/>
+                                onPress={() => navigate('EnterCode', {userType: 'parent'})}/>
             </LinearGradient>
         );
     }

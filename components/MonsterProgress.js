@@ -40,6 +40,7 @@ class MonsterProgress extends React.Component {
                             {this.props.description}</Text>
                     </View>
                     <ProgressBar progress={this.props.progress}
+                                 max={20}
                                  captionPosition={'top'}
                     />
                 </View>

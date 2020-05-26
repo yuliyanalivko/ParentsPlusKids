@@ -17,6 +17,7 @@ export default class ChildTaskDialog extends Component {
     }
 
     render() {
+        const {task} = this.props.task;
         return (
             <Modal transparent={true}
                    visible={this.props.visible}>
@@ -30,11 +31,11 @@ export default class ChildTaskDialog extends Component {
                                         style={styles.gradient}>
                             <View style={styles.header}>
                                 <View style={styles.user}>
-                                    <Image style={commonStyles.userIcon}
+                                    <Image style={styles.userImg}
                                            source={{uri: 'https://reactnative.dev/img/tiny_logo.png',}}/>
                                     <View>
-                                        <Text style={styles.parentName}>{this.props.parentName}</Text>
-                                        <Text style={styles.date}>{this.props.date}</Text>
+                                        <Text style={styles.parentName}>{this.props.task.parentName}</Text>
+                                        <Text style={styles.date}>{this.props.task.date.substring(0,10)}</Text>
                                     </View>
                                 </View>
                             </View>
@@ -46,32 +47,45 @@ export default class ChildTaskDialog extends Component {
                         </LinearGradient>
 
                         <View style={styles.content}>
-                            <Text style={styles.task}>{this.props.task}</Text>
+                            <Text style={styles.task}>{this.props.task.taskText}</Text>
 
                             <View style={styles.paramsLine}>
                                 <View style={styles.param}>
                                     <Image style={styles.icon}
                                            source={{uri: 'https://reactnative.dev/img/tiny_logo.png',}}/>
-                                    <Text style={styles.paramText}>{this.props.points}</Text>
+                                    <Text style={styles.paramText}>{this.props.task.points}</Text>
                                 </View>
+                                {this.props.task.leadTime &&
                                 <View style={styles.param}>
                                     <Image style={styles.icon}
                                            source={{uri: 'https://reactnative.dev/img/tiny_logo.png',}}/>
-                                    <Text style={styles.paramText}>{this.props.leadTime}</Text>
+                                    <Text style={styles.paramText}>{this.props.task.leadTime}</Text>
                                 </View>
+                                }
+                                {this.props.task.monster &&
                                 <View style={styles.param}>
                                     <Image style={styles.icon}
                                            source={{uri: 'https://reactnative.dev/img/tiny_logo.png',}}/>
-                                    <Text style={styles.paramText}>{this.props.monster}</Text>
+                                    <Text style={styles.paramText}>{this.props.task.monster}</Text>
                                 </View>
+                                }
                             </View>
 
                             <View style={styles.buttons}>
+                               { console.log(this.props.task)}
                                 {this.props.confirmButtonType === 'delete' &&
+                                this.props.task.parentId === this.props.userId &&
                                 <TextButton buttonColor={colors.RED_GRADIENT.end} title={'Удалить'}
                                             onPress={this.props.onConfirm}/>
                                 }
-                                {this.props.confirmButtonType === 'confirm' &&
+
+                                {this.props.confirmButtonType === 'confirm' && this.props.userType === 'child' &&
+                                <GradientButton title={'Подтвердить'}
+                                                onPress={this.props.onConfirm}/>
+                                }
+
+                                {this.props.confirmButtonType === 'confirm' && this.props.userType === 'parent'
+                                    && this.props.task.parentId === this.props.userId &&
                                 <GradientButton title={'Подтвердить'}
                                                 onPress={this.props.onConfirm}/>
                                 }
@@ -92,7 +106,7 @@ const styles = StyleSheet.create({
         height: 36,
         width: 36,
     },
-    content: {...commonStyles.dialogContent},
+    content: {...commonStyles.dialogContent,...{marginTop: 0}},
     header: {
         flexDirection: 'row',
         alignItems: 'center',

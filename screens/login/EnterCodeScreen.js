@@ -4,27 +4,11 @@ import {GradientButton} from "../../components/GradientButton";
 import Input from "../../components/Input";
 import {CloseHeader} from "../../components/CloseHeader";
 
-import colors from "../../constants/Colors";
 import commonStyles from "../../constants/Styles";
 import styleVars from "../../constants/Variables";
-import {Dropdown} from "react-native-material-dropdown";
+import colors from "../../constants/Colors";
 import {TextButton} from "../../components/TextButton";
 
-const FEMALE_ROLES = [
-    {value: 'Мама'},
-    {value: 'Бабушка'},
-    {value: 'Сестра'},
-    {value: 'Тетя'},
-    {value: 'Другое'}
-];
-
-const MALE_ROLES = [
-    {value: 'Папа'},
-    {value: 'Дедушка'},
-    {value: 'Брат'},
-    {value: 'Дядя'},
-    {value: 'Другое'}
-];
 
 export class EnterCodeScreen extends React.Component {
     constructor(props) {
@@ -57,18 +41,27 @@ export class EnterCodeScreen extends React.Component {
 
     handleConfirm() {
         if (this.state.btnOpacity === 1) {
-            let errorText;
-            let errorOpacity;
-            errorText = this.state.code === '1'? 'Код неверен' : '';
-            errorOpacity = errorText === '' ? 0 : 1;
+            fetch(`http://10.0.2.2:9000/family/${this.state.code}`)
+                .then(response => response.json())
+                .then(family => {
+                    console.log(family);
+                    for (const key in family) {
+                        if (family.hasOwnProperty(key)) {
+                            this.props.navigation.navigate('Registration',
+                                {
+                                    familyId: family.id,
+                                    userType: this.props.route.params.userType
+                                });
+                            return;
+                        }
+                    }
 
-            this.setState({
-                errorText: errorText,
-                errorOpacity: errorOpacity
-            });
-            if (errorText === ''){
-                this.props.navigation.navigate('Registration')
-            }
+                    this.setState({
+                        errorText: 'Код неверен',
+                        errorOpacity: 1
+                    });
+                });
+
         }
     }
 
@@ -82,21 +75,29 @@ export class EnterCodeScreen extends React.Component {
                     <Text style={styles.title}>Введите код</Text>
 
                     <Input label={'Код'} maxLength={254}
-                           onChangeText={this.updateState}/>
+                           onChangeText={(code) => this.updateState(code)}/>
 
                     <View style={{opacity: this.state.btnOpacity}}>
                         <GradientButton title={'Далее'}
+                                        width={styleVars.COMPONENT_WIDTH}
                                         onPress={this.handleConfirm}/>
                     </View>
 
-                    <Text style={[commonStyles.error,{opacity: this.state.errorOpacity, marginTop:16}]}>
+                    <Text style={[commonStyles.error, {opacity: this.state.errorOpacity, marginTop: 16}]}>
                         {this.state.errorText}</Text>
+
+                    {this.props.route.params.userType === 'parent' &&
+                    <TextButton title={'Зарегистрироваться без кода'}
+                                onPress={() => this.props.navigation.navigate('Registration', {userType: 'parent'})}/>
+                    }
+
                     <View style={{
                         position: "absolute",
                         bottom: styleVars.HEADER_HEIGHT
                     }}>
-                        <TextButton title={'Зарегистрироваться без кода'}
-                                    onPress={() => this.props.navigation.navigate('EnterCode')}/>
+                        <TextButton title={'У меня уже есть аккаунт'}
+                                    color={colors.secondColor}
+                                    onPress={() => this.props.navigation.navigate('Login')}/>
                     </View>
                 </ScrollView>
             </KeyboardAvoidingView>
@@ -106,6 +107,6 @@ export class EnterCodeScreen extends React.Component {
 
 const styles = StyleSheet.create({
     container: {...commonStyles.loginScreenContainer},
-    scrollSection: {...commonStyles.loginScreenScrollSection },
+    scrollSection: {...commonStyles.loginScreenScrollSection},
     title: {...commonStyles.loginScreenTitle},
 });

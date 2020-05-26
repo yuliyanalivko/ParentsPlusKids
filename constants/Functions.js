@@ -7,3 +7,9 @@ export const validateEmail = (email) => {
 export const validatePassword = (password) => {
     return password.length >= 8;
 };
+
+export const setLeadTime = (leadTime) => {
+    return (leadTime === 1) ? leadTime + ' день' :
+        (leadTime >= 2 && leadTime <= 4) ? leadTime + ' дня' :
+            leadTime + ' дней'
+};

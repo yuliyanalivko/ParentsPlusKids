@@ -8,8 +8,6 @@ import ConversationsScreen from "./../screens/ConversationsScreen";
 
 import colors from './../constants/Colors'
 
-import {StackActions} from '@react-navigation/native';
-
 const BottomTab = createBottomTabNavigator();
 
 export class ParentBottomTabNavigator extends React.Component {
@@ -18,18 +16,14 @@ export class ParentBottomTabNavigator extends React.Component {
         this.handleBack = this.handleBack.bind(this);
     }
 
-
-        componentWillMount = () => {
+/*        componentWillMount = () => {
             BackHandler.addEventListener('hardwareBackPress', this.handleBack);
         };
         componentWillUnmount = () => {
             BackHandler.removeEventListener('hardwareBackPress', this.handleBack);
-        };
+        };*/
 
     handleBack() {
-        /*this.props.navigation.dispatch(
-            StackActions.replace('ParentNavigator')
-        );*/
         BackHandler.exitApp();
     }
 

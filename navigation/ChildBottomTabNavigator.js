@@ -14,31 +14,20 @@ const BottomTab = createBottomTabNavigator();
 import {StackActions} from '@react-navigation/native';
 
 export class ChildBottomTabNavigator extends React.Component {
-/*
-
-    componentWillMount = () => {
-        BackHandler.addEventListener('hardwareBackPress', BackHandler.exitApp);
-    };
-    componentWillUnmount = () => {
-        BackHandler.removeEventListener('hardwareBackPress', BackHandler.exitApp);
-    };
-*/    constructor(props) {
+    constructor(props) {
         super(props);
         this.handleBack = this.handleBack.bind(this);
     }
 
 
-    componentWillMount = () => {
+/*    componentWillMount = () => {
         BackHandler.addEventListener('hardwareBackPress', this.handleBack);
     };
     componentWillUnmount = () => {
         BackHandler.removeEventListener('hardwareBackPress', this.handleBack);
-    };
+    };*/
 
     handleBack() {
-        /*this.props.navigation.dispatch(
-            StackActions.replace('ChildNavigator')
-        );*/
         BackHandler.exitApp();
     }
 

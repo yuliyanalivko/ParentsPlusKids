@@ -15,12 +15,12 @@ export class DayQuestion extends React.Component {
         this.hideDialog = this.hideDialog.bind(this);
         this.handleConfirm = this.handleConfirm.bind(this);
         this.state = {
-            editable: this.props.toAnswer,
-            bgGradient: (!this.props.toAnswer) ? {start: colors.componentBgColor, end: colors.componentBgColor}
+            editable: this.props.editable,
+            bgGradient: (!this.props.editable)? {start: colors.componentBgColor, end: colors.componentBgColor}
                 : colors.mainGradient,
             answer: (this.props.answer === null) ? 'Нет ответа' : (this.props.answer),
             answerStyle: (this.props.answer === null) ? styles.noAnswer : styles.answered,
-            questionColor: (!this.props.toAnswer) ? colors.mainText : '#fff',
+            questionColor: (!this.props.editable) ? colors.mainText : '#fff',
 
             dialogVisible: false
         }

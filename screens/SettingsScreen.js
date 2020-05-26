@@ -1,5 +1,15 @@
 import React from 'react';
-import {StyleSheet, View, Text, Image, ScrollView, KeyboardAvoidingView, TouchableHighlight} from "react-native";
+import {
+    StyleSheet,
+    View,
+    Text,
+    Image,
+    ScrollView,
+    KeyboardAvoidingView,
+    TouchableHighlight,
+    AsyncStorage,
+    TextInput, ActivityIndicator
+} from "react-native";
 import {CloseHeader} from "../components/CloseHeader";
 import Input from "../components/Input";
 import {Dropdown} from "react-native-material-dropdown";
@@ -14,6 +24,7 @@ import colors from "../constants/Colors";
 import {validatePassword} from "../constants/Functions";
 import {validateEmail} from "../constants/Functions";
 import {ADD} from "../assets/images";
+import {InputDialog} from "../components/InputDialog";
 
 const FEMALE_ROLES = [
     {value: 'Мама'},
@@ -43,42 +54,51 @@ export default class SettingsScreen extends React.Component {
         this.showDialog = this.showDialog.bind(this);
 
         this.state = {
-            userName: '',
-            email: '',
-            gender: '',
-            role: '',
+            isLoading: true,
+
             errorText: '',
             errorOpacity: 0,
 
             avatarDialogVisible: false,
             closeDialogVisible: false,
             passwordDialogVisible: false
-        }
+        };
+
     }
+
 
     handleCancel(field) {
         field === 'avatarDialogVisible' ? this.setState({avatarDialogVisible: false}) :
             field === 'closeDialogVisible' ? this.setState({closeDialogVisible: false}) :
-                field === 'passwordDialogVisible' ? this.setState({passwordDialogVisible: false}) : 0;
+                    field === 'passwordDialogVisible' ? this.setState({passwordDialogVisible: false}) : 0;
     }
 
     showDialog(field) {
-        field === 'avatarDialogVisible' ? this.setState({avatarDialogVisible: true}) :
+        field === 'avatarDialogVisible' && this.state.userType === 'child' ? this.setState({avatarDialogVisible: true}) :
             field === 'closeDialogVisible' ? this.setState({closeDialogVisible: true}) :
                 field === 'passwordDialogVisible' ? this.setState({passwordDialogVisible: true}) : 0;
     }
 
     handleConfirm(field) {
-        field === 'avatarDialogVisible' ? this.setState({avatarDialogVisible: false}) :
-            field === 'closeDialogVisible' ? this.setState({closeDialogVisible: false}) :
-                field === 'passwordDialogVisible' ? this.setState({passwordDialogVisible: false}) : 0;
-        if (field === 'closeDialogVisible') {
+        if (field === 'avatarDialogVisible') {
+            this.setState({avatarDialogVisible: false});
+        } else if (field === 'closeDialogVisible') {
+            this.setState({closeDialogVisible: false});
+            AsyncStorage.removeItem('userId');
+            AsyncStorage.removeItem('userName');
+            AsyncStorage.removeItem('gender');
+            AsyncStorage.removeItem('role');
+            AsyncStorage.removeItem('userType');
+            AsyncStorage.removeItem('parentId');
+            AsyncStorage.removeItem('childId');
             this.props.navigation.navigate('Welcome');
+        } else if (field === 'passwordDialogVisible') {
+            this.setState({passwordDialogVisible: false})
         }
     }
 
     updateState(field, value) {
-        field === 'userName' ? this.setState({userName: value}) :
+        field === 'name' ? this.setState({name: value}) :
             field === 'email' ? this.setState({email: value}) :
                 field === 'gender' ? this.setState({gender: value}) :
                     field === 'role' ? this.setState({role: value}) : 0;
@@ -91,18 +111,70 @@ export default class SettingsScreen extends React.Component {
     }
 
     handleSave() {
-        const errorText = this.state.userName.length <= 0 ? 'Имя не может быть пустым' :
+        const errorText = this.state.name.length <= 0 ? 'Имя не может быть пустым' :
             validateEmail(this.state.email) ? '' : 'Email введен неверно';
         this.setState({
             errorText: errorText,
             errorOpacity: errorText === '' ? 0 : 1
         });
         if (errorText === '') {
+            const _storeData = async () => {
+                try {
+                    console.log(this.state.name);
+                    //Прописать здесь изменение в бд и если все ок занести изменения в AsyncStorage
+                    await AsyncStorage.setItem('email', this.state.email);
+                    await AsyncStorage.setItem('userName', this.state.name);
+                    await AsyncStorage.setItem('gender', this.state.gender);
+                    await AsyncStorage.setItem('role', this.state.role);
+                } catch (e) {
+                    console.log('SettingsScreen handleSave error');
+                }
+            };
+            _storeData();
             this.props.navigation.goBack();
         }
     }
 
+    componentDidMount = async () => {
+        let name = '', gender = 'Женский', role = 'Мама', email = '', userType;
+        try {
+            const userName = await AsyncStorage.getItem('userName')
+                .then(value => name = value);
+            const userEmail = await AsyncStorage.getItem('email')
+                .then(value => email = value);
+            const userGender = await AsyncStorage.getItem('gender')
+                .then(value => gender = value);
+            const userRole = await AsyncStorage.getItem('role')
+                .then(value => role = value);
+            const type = await AsyncStorage.getItem('userType')
+                .then(value => userType = value);
+            console.log(name + ' ' + email + ' ' + gender + ' ' + role + ' ' + userType);
+            if (name !== null && gender !== null && email !== null) {
+
+                this.setState({
+                    isLoading: false,
+                    email: email,
+                    gender: gender,
+                    role: role,
+                    name: name,
+                    userType: userType
+                })
+            }
+        } catch (error) {
+            console.log('SettingsScreen componentDidMount error');
+        }
+    };
+
+
     render() {
+        if (this.state.isLoading) {
+            return (
+                <View style={{flex: 1, marginTop: '30%'}}>
+                    {console.log('loading')}
+                    <ActivityIndicator color={colors.activeColor} size={'large'}/>
+                </View>
+            )
+        }
         return (
             <KeyboardAvoidingView style={styles.container}
                                   behavior={"padding"}>
@@ -117,13 +189,13 @@ export default class SettingsScreen extends React.Component {
                                    source={ADD}/>
                         </TouchableHighlight>
                         <View style={styles.headText}>
-                            <Input value={'Александра Александра'} inputStyle={styles.name}
+                            <Input value={this.state.name} inputStyle={styles.name}
                                    multiline maxLength={50}
-                                   onChangeText={(value) =>this.updateState('userName', value)}/>
+                                   onChangeText={(value) => this.updateState('name', value)}/>
                         </View>
                     </View>
                     <Dropdown label='Пол'
-                              value={'Женский'}
+                              value={this.state.gender}
                               data={[{value: 'Мужской'}, {value: 'Женский'}]}
                               textColor={colors.mainText}
                               baseColor={colors.secondColor}
@@ -131,12 +203,13 @@ export default class SettingsScreen extends React.Component {
                               selectedItemColor={colors.mainText}
                               disabledItemColor={colors.secondColor}
                               containerStyle={{
-                                  width: '100%'
+                                  width: '100%',
+                                  paddingBottom: 28
                               }}
-                              onChangeText={(value) =>this.updateState('gender', value)}
+                              onChangeText={(value) => this.updateState('gender', value)}
                     />
-                    <Dropdown label='Роль'
-                              value={'Мама'}
+                    {/*<Dropdown label='Роль'
+                              value={this.state.role}
                               data={FEMALE_ROLES}
                               textColor={colors.mainText}
                               baseColor={colors.secondColor}
@@ -147,11 +220,12 @@ export default class SettingsScreen extends React.Component {
                                   width: '100%',
                                   paddingBottom: 18
                               }}
-                              onChangeText={(value) =>this.updateState('role', value)}
-                    />
-                    <Input label={'Электронная почта'} value={'Электронная почта'}
+                              onChangeText={(value) => this.updateState('role', value)}
+                    />*/}
+                    <Input label={'Электронная почта'}
+                           value={this.state.email}
                            autoCompleteType={'email'}
-                           onChangeText={(value) =>this.updateState('email', value)}/>
+                           onChangeText={(value) => this.updateState('email', value)}/>
 
                     <Text style={{
                         color: colors.RED_GRADIENT.end,
@@ -185,6 +259,7 @@ export default class SettingsScreen extends React.Component {
                 <ChangePasswordDialog visible={this.state.passwordDialogVisible}
                                       onCancel={() => this.handleCancel('passwordDialogVisible')}
                                       onConfirm={() => this.handleConfirm('passwordDialogVisible')}/>
+
             </KeyboardAvoidingView>
         );
     }

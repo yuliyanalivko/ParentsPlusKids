@@ -5,31 +5,32 @@ import ChildTask from "./../components/ChildTask";
 
 import commonStyles from "./../constants/Styles";
 import styleVars from './../constants/Variables';
-import colors from "../constants/Colors";
-import {GradientButton} from "../components/GradientButton";
-import ChildTaskDialog from "./ChildTaskDialog";
 
 class ChildTaskList extends React.Component {
     constructor(props) {
         super(props);
         this.onDelete = this.onDelete.bind(this);
-        this.data = this.props.data
+        this.data = this.props.data;
+        this.childId=this.props.childId;
     }
 
     onDelete(id) {
         this.data.find(element => element.id === id);
-        alert(this.data.find(element => element.id === id));
         this.forceUpdate();
     }
 
     render() {
         return (
             <View style={{marginBottom: styleVars.COMPONENT_GAP}}>
-                {(this.props.sectionTitle === 'Текущие') &&
+                {(this.props.sectionTitle === 'Текущие' && this.props.userType==='parent') &&
                 <SectionHeader style={styles.sectionHeader}
                                title={this.props.sectionTitle}
                                icon={'add'}
                                onPressIcon={()=>{this.props.navigation.navigate('AddTask')}}
+                />}
+                {(this.props.sectionTitle === 'Текущие' && this.props.userType==='child') &&
+                <SectionHeader style={styles.sectionHeader}
+                               title={this.props.sectionTitle}
                 />}
                 {(this.props.sectionTitle === 'Ранее') &&
                 <SectionHeader style={styles.sectionHeader}
@@ -41,15 +42,11 @@ class ChildTaskList extends React.Component {
                     style={styles.flatList}
                     data={this.props.data}
                     keyExtractor={item => item.id}
-                    renderItem={({item}) => <ChildTask task={item.task}
-                                                       date={item.date}
-                                                       status={item.status}
-                                                       points={item.points}
-                                                       leadTime={item.leadTime}
-                                                       monster={item.monster}
+                    renderItem={({item}) => <ChildTask task={item}
                                                        id={item.id}
                                                        onDelete={this.onDelete}
-                                                       user = {this.props.user}
+                                                       userType = {this.props.userType}
+                                                       userId = {this.props.userId}
                     />}
                 />
                 }

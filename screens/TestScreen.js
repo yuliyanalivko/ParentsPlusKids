@@ -1,5 +1,14 @@
 import React from 'react';
-import {View, Text, Image, TouchableHighlight, StyleSheet, StatusBar} from "react-native";
+import {
+    View,
+    Text,
+    Image,
+    TouchableHighlight,
+    StyleSheet,
+    StatusBar,
+    AsyncStorage,
+    ActivityIndicator
+} from "react-native";
 import {LinearGradient} from "expo-linear-gradient";
 import {GradientButton} from "../components/GradientButton";
 import {CloseHeader} from "../components/CloseHeader";
@@ -11,7 +20,7 @@ import commonStyles from '../constants/Styles';
 import {ProgressBar} from "../components/ProgressBar";
 import {TestResultDialog} from "../components/TestResultDialog";
 
-const TEST = [
+/*const TEST = [
     {
         monster: 'Леняш',
         minPoints: 5,
@@ -80,7 +89,7 @@ const TEST = [
                     points: 2
                 }]
         }]
-];
+];*/
 
 const OptionContainer = props => {
     const isActive = props.active ? props.active : false;
@@ -105,18 +114,16 @@ class TestScreen extends React.Component {
         this.handleConfirm = this.handleConfirm.bind(this);
         this.setOptionActive = this.setOptionActive.bind(this);
         this.state = {
-            currentQuestionNumber: 0,
-            chosenOption: 0,
-            currentQuestionPoints: TEST[1][0].options[0].points,
-            pointCount: 0,
+            isLoading: true,
+            TEST: [],
 
             dialogVisible: false
         }
     }
 
     handleNext() {
-        if (this.state.currentQuestionNumber <= TEST.length) {
-            const newPoints = TEST[1][this.state.currentQuestionNumber + 1].options[0].points;
+        if (this.state.currentQuestionNumber < this.state.TEST.questions.length-1) {
+            const newPoints = this.state.TEST.questions[this.state.currentQuestionNumber + 1].answers[0].points;
             this.setState({
                 currentQuestionNumber: 1 + this.state.currentQuestionNumber,
                 pointCount: this.state.pointCount + this.state.currentQuestionPoints,
@@ -125,7 +132,8 @@ class TestScreen extends React.Component {
             });
         } else {
             this.setState({
-                dialogVisible: true
+                dialogVisible: true,
+                pointCount: this.state.pointCount + this.state.currentQuestionPoints
             })
 
         }
@@ -142,7 +150,54 @@ class TestScreen extends React.Component {
         this.props.navigation.goBack();
     }
 
+    componentDidMount = async () => {
+        const getTest = async () => {
+            let testBuf = [];
+            const {testId} = this.props.route.params;
+            let questions = [];
+            await fetch(`http://10.0.2.2:9000/test/${testId}`)
+                .then(response => response.json())
+                .then(test => {
+                    test.forEach(item => {
+                        const answers = JSON.parse(item.answers);
+                        const points = JSON.parse(item.points);
+                        let answersArr = [];
+                        answers.forEach((answer, ind) => {
+                            answersArr.push({
+                                answer: answers[ind],
+                                points: points[ind]
+                            });
+                        });
+                        questions.push({
+                            question: item.question,
+                            answers: answersArr
+                        })
+                    });
+                    this.setState({
+                        TEST: {
+                            monster: test[0].monster,
+                            minPoints: test[0].minPoints,
+                            questions: questions,
+                        },
+                        currentQuestionNumber: 0,
+                        chosenOption: 0,
+                        currentQuestionPoints: questions[0].answers[0].points,
+                        pointCount: 0,
+                        isLoading: false
+                    });
+                });
+        };
+        getTest();
+    };
+
     render() {
+        if (this.state.isLoading) {
+            return (
+                <View style={{flex: 1, marginTop: '30%'}}>
+                    <ActivityIndicator color={colors.activeColor} size={'large'}/>
+                </View>
+            )
+        }
         return (
             <LinearGradient colors={[colors.mainGradient.start, colors.mainGradient.end]}
                             locations={[0, 1]} start={{x: 0.5, y: 0}} end={{x: .5, y: 1}}
@@ -153,13 +208,13 @@ class TestScreen extends React.Component {
                 <View style={styles.testContainer}>
                     <ProgressBar captionPosition={'center'}
                                  progress={this.state.currentQuestionNumber + 1}
-                                 max={TEST[1].length}/>
+                                 max={this.state.TEST.questions.length}/>
                     <View style={styles.questionContainer}>
                         <Text style={styles.question}>
-                            {TEST[1][this.state.currentQuestionNumber].question}</Text>
+                            {this.state.TEST.questions[this.state.currentQuestionNumber].question}</Text>
                     </View>
-                    {TEST[1][this.state.currentQuestionNumber].options.map((item, index) => (
-                        <OptionContainer option={item.option}
+                    {this.state.TEST.questions[this.state.currentQuestionNumber].answers.map((item, index) => (
+                        <OptionContainer option={item.answer+'-'+item.points}
                                          active={index === this.state.chosenOption}
                                          onPress={() => this.setOptionActive(item.points, index)}/>
                     ))}
@@ -167,7 +222,11 @@ class TestScreen extends React.Component {
                 </View>
 
                 <TestResultDialog visible={this.state.dialogVisible}
-                                  message={'Отлично! Этот монстр не был обнаружен внутри тебя. Ты молодец!'}
+                                  monster={this.state.TEST.monster}
+                                  message={this.state.pointCount<=this.state.TEST.minPoints?
+                                      'Отлично! Этот монстр не был обнаружен внутри тебя. Ты молодец!':
+                                      `О-оу, кажется, в тебе живет монстр... Давай прогоним его вместе!`
+                                  }
                                   onConfirm={this.handleConfirm}
                 />
             </LinearGradient>

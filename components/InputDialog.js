@@ -1,7 +1,6 @@
 import React from "react";
 import {Text, View, StyleSheet, Modal, Image, TouchableHighlight} from "react-native";
 
-import styleVars from './../constants/Variables';
 import colors from './../constants/Colors';
 import commonStyles from './../constants/Styles';
 import {GradientButton} from "./GradientButton";
